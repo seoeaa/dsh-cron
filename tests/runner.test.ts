@@ -64,7 +64,7 @@ describe('RunLauncher', () => {
         finishedAt: running?.startedAt,
         digest: 'all tests passed',
       })
-      return { child: { kill: vi.fn() } as never, exit: Promise.resolve({ code: 0, signal: null }) }
+      return { child: { kill: vi.fn() } as never, exit: Promise.resolve({ code: 0, signal: null }), tail: () => '' }
     })
 
     const handle = launcher.launch(job, 'schedule')
@@ -106,12 +106,15 @@ describe('RunLauncher', () => {
     const launcher = new RunLauncher({} as never, CONFIG, () => ({
       child: { kill: vi.fn() } as never,
       exit: Promise.resolve({ code: 3, signal: null }),
+      tail: () => 'dsh-cron: events is not iterable\n',
     }))
 
     const record = await launcher.launch(job, 'manual').done
     expect(record.status).toBe('failed')
     expect(record.exitCode).toBe(3)
     expect(record.error).toContain('exit code 3')
+    // A run that dies before writing its own record must still leave evidence.
+    expect(record.error).toContain('events is not iterable')
     expect(record.trigger).toBe('manual')
   })
 
@@ -120,6 +123,7 @@ describe('RunLauncher', () => {
     const launcher = new RunLauncher({} as never, CONFIG, () => ({
       child: { kill: vi.fn() } as never,
       exit: Promise.resolve({ code: 1, signal: null }),
+      tail: () => '',
     }))
     const record = await launcher.launch(job, 'schedule').done
     expect(record.deliveries).toEqual([
@@ -134,7 +138,7 @@ describe('RunLauncher', () => {
     const launcher = new RunLauncher(
       { chatnode: { send: async (input: { text: string; title?: string }) => { sent.push(input) } } } as never,
       CONFIG,
-      () => ({ child: { kill: vi.fn() } as never, exit: Promise.resolve({ code: 1, signal: null }) }),
+      () => ({ child: { kill: vi.fn() } as never, exit: Promise.resolve({ code: 1, signal: null }), tail: () => '' }),
     )
     const record = await launcher.launch(job, 'schedule').done
     expect(record.deliveries).toEqual([{ type: 'file', ok: true }, { type: 'chatnode', ok: true }])
@@ -148,6 +152,7 @@ describe('RunLauncher', () => {
     const launcher = new RunLauncher({} as never, CONFIG, () => ({
       child: { kill: vi.fn() } as never,
       exit: new Promise((resolve) => { release = resolve }),
+      tail: () => '',
     }))
     const handle = launcher.launch(job, 'schedule')
     handle.kill('timeout')
@@ -162,6 +167,7 @@ describe('RunLauncher', () => {
     const launcher = new RunLauncher({} as never, CONFIG, () => ({
       child: { kill: vi.fn() } as never,
       exit: Promise.resolve({ code: 1, signal: null }),
+      tail: () => '',
     }))
     await launcher.launch(job, 'schedule').done
     const leftovers = readdirSync(runsDirFor(cwd)).filter((name) => name.endsWith('.patch.yml'))

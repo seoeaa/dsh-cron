@@ -59,6 +59,8 @@ interface LauncherServices {
 interface Spawned {
   child: ChildProcess
   exit: Promise<{ code: number | null; signal: NodeJS.Signals | null; error?: string }>
+  /** Last bytes the child wrote, for diagnosing a run that did not complete. */
+  tail(): string
 }
 
 /** Default spawner: a real child process, inheriting the parent environment. */
@@ -77,7 +79,7 @@ function spawnRun(bin: string, args: string[], cwd: string): Spawned {
     child.on('error', (error) => { resolve({ code: null, signal: null, error: error.message }) })
     child.on('close', (code, signal) => { resolve({ code, signal }) })
   })
-  return { child, exit }
+  return { child, exit, tail: () => tail }
 }
 
 /** Classify a subprocess exit for the digest line. */
@@ -85,6 +87,17 @@ function describeExit(exitInfo: { code: number | null; signal: NodeJS.Signals | 
   if (exitInfo.error !== undefined) return exitInfo.error
   if (exitInfo.signal !== null) return `signal ${exitInfo.signal}`
   return `exit code ${String(exitInfo.code)}`
+}
+
+/**
+ * Reduce a child's captured output to one bounded, single-line evidence string.
+ * @param tail - raw captured output (stdout + stderr, bounded by the spawner).
+ * @returns the last meaningful line, or `''` when the child printed nothing.
+ */
+function describeTail(tail: string): string {
+  const lines = tail.split('\n').map((line) => line.trim()).filter((line) => line !== '')
+  const last = lines.at(-1) ?? ''
+  return last.length > 400 ? `${last.slice(0, 399)}…` : last
 }
 
 /** One run id: sortable, unique, and readable in a file listing. */
@@ -228,12 +241,17 @@ export class RunLauncher {
       ...(childCompleted
         ? {}
         : {
-            error: existing?.error
+            error: [existing?.error
               ?? (timedOut
                 ? `run exceeded its ${job.timeoutMin}-minute timeout and was stopped`
                 : reason !== undefined
                   ? `run stopped: ${reason}`
                   : `run did not complete (${describeExit(exitInfo)})`),
+              // A run that dies before writing its own record leaves nothing
+              // else behind, so what the child printed is the only evidence a
+              // person can act on. Keep it bounded; it ends up in the panel.
+              describeTail(spawned.tail()),
+            ].filter((part) => part !== '').join(' — '),
           }),
     }
 

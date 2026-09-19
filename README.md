@@ -319,6 +319,21 @@ you override the row).
 | `summaryTimeoutMs` | `60000` | End-to-end deadline for the summarizer call. |
 | `runModule` | this package's compiled `lib/run.js` | Absolute path of the module a run subprocess mounts as its driver. Resolved from the installed copy; override only for development. |
 
+### The `profile` field must be one-shot-capable
+
+A run boots the profile named in the job (`profile:`, default `headless`) and
+then replaces its one-shot runner with this plugin's driver (see
+[How a run works](#how-a-run-works)). That only works when the profile actually
+has a headless runner to replace, so a job pointing at a profile without one —
+the interactive `web` profile, for example — fails at startup, before it can
+write a run record.
+
+The rule of thumb: leave `profile` out (`headless` applies), or name a profile
+you built for unattended work. If a job needs another profile's plugin set,
+install the `headless` bundle into that profile. A failed run now carries the
+child's last output line in its record, so this is visible in the history view
+rather than silent.
+
 ## How a run works
 
 1. **Sweep.** Every `tickSeconds` the scheduler asks which jobs have a fire time

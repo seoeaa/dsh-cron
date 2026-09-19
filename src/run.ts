@@ -70,9 +70,19 @@ export const Config = z.object({
   summaryTimeoutMs: z.natural().default(DEFAULT_SUMMARY_TIMEOUT_MS),
 })
 
+/** The minimal Session surface this driver reads the log through. */
+interface RunSession {
+  id: string
+  seq: number
+  /** Current harness API: an immutable snapshot of the log (optionally a range). */
+  snapshotEvents?(fromSeq?: number, toSeqExclusive?: number): readonly RunEvent[]
+  /** Older harness API: a materialized `events` array (or the accessor for one). */
+  events?: readonly RunEvent[] | (() => readonly RunEvent[])
+}
+
 /** The minimal Agent surface this driver uses. */
 interface RunAgent {
-  session: { id: string; seq: number; events: readonly RunEvent[] }
+  session: RunSession
   followup(message: unknown): void
   whenIdle(): Promise<void>
 }
@@ -134,6 +144,24 @@ async function summarizeTranscript(
 }
 
 /**
+ * Read a session's event log through whichever reader this harness exposes.
+ *
+ * The Session type changed shape between harness lines: current builds expose
+ * `snapshotEvents()`, older ones a materialized `events` array. A run driver is
+ * mounted into a *different* profile than the one it was compiled against, so it
+ * must read both — and answer with an empty log rather than throwing when it
+ * recognises neither, because losing a digest is recoverable and losing the run
+ * record is not.
+ */
+function eventsOf(session: RunSession): readonly RunEvent[] {
+  if (typeof session.snapshotEvents === 'function') return session.snapshotEvents()
+  const legacy = session.events
+  if (typeof legacy === 'function') return legacy.call(session)
+  if (Array.isArray(legacy)) return legacy
+  return []
+}
+
+/**
  * Drive one run: create the Agent, execute the task, then write the record.
  * @param ctx - plugin context carrying the injected services.
  * @param config - validated driver configuration from the run overlay.
@@ -180,7 +208,8 @@ export async function run(
   await agent.whenIdle()
   await sessions.flush(agent.session)
 
-  const outcome = summarizeEvents(agent.session.events, firstSeq)
+  const events = eventsOf(agent.session)
+  const outcome = summarizeEvents(events, firstSeq)
   const finishedAt = Date.now()
   const completed = outcome.reason?.kind === 'completed'
   const digestMaxChars = config.digestMaxChars
@@ -190,7 +219,7 @@ export async function run(
   if (outcome.text !== '' && outcome.text.length <= digestMaxChars) {
     digest = outcome.text
   } else if (outcome.text !== '') {
-    const transcript = transcriptOf(agent.session.events, firstSeq, config.summaryMaxChars)
+    const transcript = transcriptOf(events, firstSeq, config.summaryMaxChars)
     const summary = await summarizeTranscript(ctx, transcript, selection, config, agent.session.id)
     if (summary === undefined) {
       digest = `${truncate(outcome.text, digestMaxChars)}\n\n(truncated: the digest call failed, so this is the head of the last assistant message)`
@@ -215,7 +244,7 @@ export async function run(
     exitCode: completed ? 0 : 1,
     sessionId: agent.session.id,
     digest,
-    denied: deniedApprovalsOf(agent.session.events),
+    denied: deniedApprovalsOf(events),
     ...(completed ? {} : { error: outcome.reason?.error?.message ?? 'run ended without completion' }),
   }
   writeRun(cwd, record)

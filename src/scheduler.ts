@@ -70,6 +70,15 @@ export interface DueJob {
 export class JobScheduler {
   private timer: (() => void) | undefined
   private started = false
+  /**
+   * The instant this scheduler took responsibility for firing jobs.
+   *
+   * A job that has never run is anchored here (minus one tick), NOT at "now
+   * minus one tick" recomputed per sweep: a sliding anchor moves forward with
+   * every tick, so `next` would always sit in the future and an interval job
+   * like `every 30m` would never fire at all.
+   */
+  private readonly armedAt = new Date()
 
   constructor(
     private readonly ctx: Context,
@@ -109,7 +118,7 @@ export class JobScheduler {
       const anchorMs = state.lastRunAt[job.name]
       const anchor = anchorMs !== undefined
         ? new Date(anchorMs)
-        : new Date(now.getTime() - this.config.tickSeconds * 1000)
+        : new Date(this.armedAt.getTime() - this.config.tickSeconds * 1000)
       let next: Date | undefined
       try {
         next = nextRunAfter(job.schedule, job.timezone, anchor)

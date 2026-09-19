@@ -116,19 +116,35 @@ describe('JobScheduler.due', () => {
     expect(scheduler.due(now)).toEqual([])
   })
 
-  it('anchors a never-run job one tick back, so adding it never replays history', () => {
+  it('anchors a never-run job at activation, so it fires on its first interval and not before', () => {
     const { ctx } = fakeContext()
-    // A job whose five-minute slot falls inside the one-tick lookback fires.
-    const justDue = new JobScheduler(ctx as never, fakeService({ jobs: [job({ schedule: '*/5 * * * *' })] }).service as never,
-      { tickSeconds: 20, allowRunNow: true })
-    expect(justDue.due(new Date('2026-01-05T12:05:05Z')).map((entry) => entry.job.name)).toEqual(['job-a'])
-    // A slot that fell 20 seconds earlier than the lookback is not replayed: the
-    // anchor is the sweep, not midnight.
-    expect(justDue.due(new Date('2026-01-05T12:00:20Z'))).toEqual([])
-    // Neither is an hour-old slot on an hourly job.
-    const hourly = new JobScheduler(ctx as never, fakeService({ jobs: [job({ schedule: '0 * * * *' })] }).service as never,
-      { tickSeconds: 20, allowRunNow: true })
-    expect(hourly.due(new Date('2026-01-05T12:00:20Z'))).toEqual([])
+    const scheduler = new JobScheduler(
+      ctx as never,
+      fakeService({ jobs: [job({ schedule: 'every 30m' })] }).service as never,
+      { tickSeconds: 20, allowRunNow: true },
+    )
+    // Before the first interval elapses the job is not due...
+    expect(scheduler.due(new Date())).toEqual([])
+    // ...and it stays due exactly once the interval has passed. A sliding
+    // anchor (recomputed per sweep as `now - tick`) would keep pushing this
+    // moment forward and the job would never fire; this asserts the anchor is
+    // stable across sweeps.
+    const armed = (scheduler as unknown as { armedAt: Date }).armedAt
+    expect(scheduler.due(new Date(armed.getTime() + 20_000))).toEqual([])
+    expect(scheduler.due(new Date(armed.getTime() + 31 * 60_000)).map((entry) => entry.job.name)).toEqual(['job-a'])
+  })
+
+  it('never replays history for a job defined long after its slots passed', () => {
+    const { ctx } = fakeContext()
+    const scheduler = new JobScheduler(
+      ctx as never,
+      // A leap-day schedule keeps this assertion independent of the wall clock
+      // the suite happens to run at (its next occurrence is years away, not
+      // "later today").
+      fakeService({ jobs: [job({ schedule: '0 3 29 2 *' })] }).service as never,
+      { tickSeconds: 20, allowRunNow: true },
+    )
+    expect(scheduler.due(new Date())).toEqual([])
   })
 
   it('never fires a paused job', () => {
