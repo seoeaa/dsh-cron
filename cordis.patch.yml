@@ -1,0 +1,34 @@
+# dsh-cron bundle layer.
+#
+# The store/state/service row is the plugin's spine; the scheduler row is what
+# actually fires jobs and can be disabled on its own (`engine: off` or the run
+# overlay) without losing definitions, tools or the panel. The tools and skill
+# rows make the plugin usable from a conversation; the remote row is what the
+# Web settings page reads.
+#
+# `name` resolves through the profile's node_modules, so an id-targeted override
+# in the profile's own cordis.patch.yml replaces a whole row — restate every key
+# when you override one.
+- insert:
+    - id: cron-store
+      name: dsh-cron
+      config:
+        # Who owns scheduling when another scheduler plugin is also installed:
+        # auto (default) stands down, own always schedules, off never schedules.
+        engine: auto
+        # Seconds between two due-time sweeps.
+        tickSeconds: 20
+        # Profile a run boots unless its definition names another one.
+        defaultProfile: headless
+        # Timezone applied to a definition that does not name one.
+        defaultTimezone: UTC
+        # Whether the panel and the cron_run tool may start a run out of band.
+        allowRunNow: true
+        # Run records kept per job in the panel; older files are pruned.
+        maxHistoryPerJob: 50
+        # Watch both definition directories for edits (hot reload).
+        watch: true
+
+    # NOTE: the Web settings page reaches this namespace through the package's
+    # `./typert` export, which the harness typert loader discovers from the row
+    # above — there is no second row to mount, and none should be added.
