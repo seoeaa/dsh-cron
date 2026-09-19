@@ -22,7 +22,7 @@ the four methods of the `dshCron` namespace.
 
 | When | Call | What happens |
 | --- | --- | --- |
-| Page mount, and every `Refresh` / `Retry` press | `dshCron/status` | `CronService.snapshot()` reads both definition directories, the state file, the in-flight table and the delivery targets, and returns one `CronSnapshot` |
+| Page mount, and every `Refresh` / `Retry` press | `dshCron/status` | `CronService.snapshot()` reads both definition directories, the state file, the in-flight table and the delivery targets, and returns one `CronSnapshot` (the page renders the jobs, the invalid files and the clock; the editor is what reads `targets`) |
 | Any mutating control | `dshCron/mutate` with the encoded `JobMutation` | `CronService.mutate()` applies it and answers `{ ok, message, error?, snapshot }` |
 | `History` on a row | `dshCron/history` with `(name, 100)` | `CronService.records(name, 100)` → `listRuns(job.cwd, 100)` |
 | — | `dshCron/preview` | Wired into the page's injected face, but the editor computes schedule feedback locally (see §5); nothing in the client calls it today |
@@ -50,21 +50,15 @@ Consequences a maintainer should keep:
 | `New job` | Opens the editor in create mode. | — | — | — |
 | Plugin name and version | Rendered from `snapshot.plugin` / `snapshot.version`. | — | — | — |
 
-### Engine banner
+### Engine ownership (not rendered)
 
-Rendered from `snapshot.engine` (`EngineState`), which `CronService.resolveEngine()`
-computed once at mount:
-
-| `engine` config | `snapshot.engine` | Page shows |
-| --- | --- | --- |
-| `own` | `{ mode: 'own' }` | "This plugin schedules runs." |
-| `auto`, no other scheduler mounted | `{ mode: 'own' }` | "This plugin schedules runs." |
-| `auto`, `routinesScheduler` mounted | `{ mode: 'companion', owner: 'routinesScheduler', reason: … }` | "Scheduling is owned by routinesScheduler." + the reason + "This page only edits definitions; runs are scheduled by that plugin." |
-| `off` | `{ mode: 'companion', reason: 'scheduling is disabled (engine: off); definitions are editable here' }` (no owner) | "Scheduling is owned by another plugin." + the reason + the edit-only line |
-
-The banner is the only place the page states who fires runs. It is a **view of the
-host's decision, not a control**: changing it means editing the config row and
-restarting the profile (the plugin starts the sweep once, in `apply()`).
+`CronService.resolveEngine()` decides once at mount whether this plugin fires
+runs (`{ mode: 'own' }`) or leaves that to another scheduler
+(`{ mode: 'companion', owner, reason }`). The page does **not** render that
+decision: the panel shows and edits definitions, and the same facts reach the
+model through the `cron_list` tool, which reports the owning engine in words.
+Changing ownership means editing the config row (`engine`) and restarting the
+profile — the sweep starts once, in `apply()`.
 
 ### Invalid definition files
 
@@ -73,19 +67,6 @@ reading the two directories. Each entry shows the file path and a one-line reaso
 (`invalid YAML: …`, `field "name" is required`, `field "timezone" is not a valid
 IANA zone (got …)`, …). These jobs are skipped by the sweep, the tools and the
 table until the file is fixed; the page never repairs or deletes one.
-
-### Where digests go
-
-Rendered from `snapshot.targets` (`DeliveryTarget[]`, produced by
-`CronService.targets()`):
-
-| Target | Availability source | Shown as |
-| --- | --- | --- |
-| `file` | always `true` | "File digests always land next to the job's cwd." (not listed per target) |
-| `chatnode` | `ctx.chatnode !== undefined` | The label plus either its note or "Unavailable" and the reason |
-
-The list is informational; the editor's `Deliver digest to` checkboxes are what
-write a job's `deliver` list, and an unavailable target is disabled there.
 
 ### Jobs table
 
@@ -190,8 +171,8 @@ never retries on its own.
 | --- | --- | --- |
 | Loading | first `status` in flight | "Loading…" |
 | Load error | `status` rejected | Error block with the message and `Retry` |
-| Ready, owned | `engine.mode === 'own'` | Banner line "This plugin schedules runs." |
-| Ready, companion | `engine.mode === 'companion'` | Warning-toned banner naming the owner (or "another plugin") plus the reason |
+| Ready | `snapshot.jobs` and `snapshot.invalid` rendered, toolbar enabled | the table |
+| Updating | a mutation or `Refresh` is in flight | the table stays mounted with an "updating" flag |
 | Refreshing | a `status` call while a snapshot exists | Table stays mounted, "Updating…" line and a disabled `Refresh` |
 | Refresh failed | refresh rejected | The last good snapshot plus an "update failed" line with the error |
 | Busy row | a mutation for that row in flight | That row's actions disabled, the toggled button showing "Updating…" |

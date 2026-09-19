@@ -154,14 +154,8 @@ state of its own beyond the last loaded snapshot.
 
 - **Toolbar** — plugin name and version, `Refresh`, `New job`. Refresh is on
   demand: the host does not push updates to the browser.
-- **Engine banner** — either "This plugin schedules runs." or "Scheduling is
-  owned by `<service>`." with the reason and the note that the page then only
-  edits definitions. This is the answer to "who is scheduling?".
 - **Invalid definition files** — each file that failed to parse, with one line of
   reason. These files are skipped until fixed.
-- **Where digests go** — the file digest is always written next to the job's
-  `cwd`; other reachable targets (the conversation node) are listed with their
-  availability.
 - **Jobs table** — one row per job:
   - `Name`, with `paused` and `running` badges;
   - `Schedule` — the human description plus the raw expression;
@@ -290,9 +284,9 @@ Scheduling ownership, when more than one scheduler is installed:
 
 | `engine` | Behaviour |
 | --- | --- |
-| `auto` (default) | If another scheduler is mounted (the cordis service `routinesScheduler`), this plugin schedules nothing, keeps its tools, its store and its page, and says so in the panel banner. Otherwise it schedules. |
+| `auto` (default) | If another scheduler is mounted (the cordis service `routinesScheduler`), this plugin schedules nothing and keeps its tools, its store and its page. Otherwise it schedules. Ask the `cron_list` tool which engine is firing runs. |
 | `own` | This plugin schedules regardless of what else is mounted. This is the switch you flip after standing the other scheduler down; with both active, both fire. |
-| `off` | This plugin never schedules: definitions, tools, history and the page keep working, and the panel banner reports that scheduling is disabled here. |
+| `off` | This plugin never schedules: definitions, tools, history and the page keep working. |
 
 ## Configuration
 

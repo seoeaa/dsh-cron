@@ -5,7 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-09-20
+
+### Changed
+
+- The settings page no longer renders the engine banner ("Scheduling is owned by
+  …", "This plugin schedules runs.") or the "Where digests go" block. Both were
+  explanation, not control, and they crowded the page: who fires runs is now
+  reported where it is actually asked for — the `cron_list` tool — and the
+  editor's delivery checkboxes still show target availability inline.
+  (`snapshot.engine` and `snapshot.targets` are unchanged on the wire.)
+
 ## [0.1.0] - 2026-09-20
+
 
 First release: scheduled agents for DeepSeek Harness, with a Web settings page
 and model-facing tools over one shared job store.

@@ -73,27 +73,6 @@ const CRON_CSS = `
   color: var(--dsw-alias-label-secondary);
   overflow-wrap: anywhere;
 }
-[data-dsh-cron] .dc-banner {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  border: 1px solid var(--dsw-alias-border-l3);
-  border-radius: 6px;
-  background: var(--dsw-alias-bg-layer-1);
-  padding: 8px 12px;
-}
-[data-dsh-cron] .dc-banner[data-tone='companion'] {
-  border-color: var(--dsw-alias-state-warn-primary);
-}
-[data-dsh-cron] .dc-banner-title {
-  margin: 0;
-  color: var(--dsw-alias-label-primary);
-}
-[data-dsh-cron] .dc-banner-detail {
-  margin: 0;
-  color: var(--dsw-alias-label-secondary);
-  overflow-wrap: anywhere;
-}
 [data-dsh-cron] .dc-invalid {
   display: flex;
   flex-direction: column;
@@ -126,24 +105,6 @@ const CRON_CSS = `
   display: block;
   color: var(--dsw-alias-label-secondary);
   overflow-wrap: anywhere;
-}
-[data-dsh-cron] .dc-targets {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  color: var(--dsw-alias-label-secondary);
-}
-[data-dsh-cron] .dc-targets-title {
-  margin: 0;
-  color: var(--dsw-alias-label-secondary);
-}
-[data-dsh-cron] .dc-targets-list {
-  list-style: disc;
-  margin: 0;
-  padding-left: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
 }
 [data-dsh-cron] .dc-table-wrap {
   overflow-x: auto;

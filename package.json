@@ -1,6 +1,6 @@
 {
   "name": "dsh-cron",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Scheduled agents for DeepSeek Harness: cron jobs you can see and edit in the Web panel, and that the model manages with first-class tools — YAML definitions, run history, digests, unattended-safe runs.",
   "keywords": [
     "dsh",

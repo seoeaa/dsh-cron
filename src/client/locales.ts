@@ -30,16 +30,10 @@ export const en = {
   empty: 'No jobs yet.',
   emptyHint: 'Create your first scheduled job with “New job”.',
 
-  engineCompanion: 'Scheduling is owned by {owner}.',
-  engineCompanionUnknown: 'Scheduling is owned by another plugin.',
-  engineCompanionEdit: 'This page only edits definitions; runs are scheduled by that plugin.',
-  engineOwn: 'This plugin schedules runs.',
 
   invalidTitle: 'Invalid definition files',
   invalidHint: 'These files are skipped until they are fixed.',
 
-  targetsTitle: 'Where digests go',
-  targetsFileHint: 'File digests always land next to the job’s cwd.',
   targetUnavailable: 'Unavailable',
 
   colName: 'Name',
@@ -163,16 +157,10 @@ export const ru: Record<DshCronLocaleKey, string> = {
   empty: 'Задач пока нет.',
   emptyHint: 'Создайте первую задачу кнопкой «Новая задача».',
 
-  engineCompanion: 'Расписанием управляет {owner}.',
-  engineCompanionUnknown: 'Расписанием управляет другой плагин.',
-  engineCompanionEdit: 'Эта страница только редактирует определения; запуски выполняет тот плагин.',
-  engineOwn: 'Этот плагин выполняет задачи по расписанию.',
 
   invalidTitle: 'Некорректные файлы определений',
   invalidHint: 'Эти файлы пропускаются, пока не будут исправлены.',
 
-  targetsTitle: 'Куда попадают сводки',
-  targetsFileHint: 'Файловые сводки всегда сохраняются рядом с cwd задачи.',
   targetUnavailable: 'Недоступно',
 
   colName: 'Имя',

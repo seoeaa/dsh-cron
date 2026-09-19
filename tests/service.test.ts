@@ -225,7 +225,7 @@ describe('CronService targets and snapshot', () => {
     const snapshot = service.snapshot()
     expect(snapshot.dirs).toEqual(resolveDirs(dirs.projectDir, dirs.globalDir))
     expect(snapshot.plugin).toBe('dsh-cron')
-    expect(snapshot.version).toBe('0.1.0')
+    expect(snapshot.version).toBe('0.1.1')
     expect(Date.parse(snapshot.now)).not.toBeNaN()
   })
 })

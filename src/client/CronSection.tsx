@@ -1,6 +1,6 @@
 /**
- * The dsh-cron settings section: engine banner, invalid-file diagnostics,
- * delivery targets, the jobs table (run/pause/resume/edit/history/copy/
+ * The dsh-cron settings section: invalid-file diagnostics, the jobs table
+ * (run/pause/resume/edit/history/copy/
  * delete) and the create/edit + history dialogs. The page renders exclusively
  * from `CronSnapshot`; every mutation reuses the refreshed snapshot the host
  * returns on the mutation response, so a successful action never re-fetches.
@@ -291,22 +291,6 @@ export function CronSection({ status, mutate, history, t }: CronSectionProps) {
 
       {snapshot !== null ? (
         <>
-          {snapshot.engine.mode === 'companion' ? (
-            <div className="dc-banner" data-tone="companion">
-              <p className="dc-banner-title">
-                {snapshot.engine.owner !== undefined && snapshot.engine.owner !== ''
-                  ? t('engineCompanion', { owner: snapshot.engine.owner })
-                  : t('engineCompanionUnknown')}
-              </p>
-              {snapshot.engine.reason !== undefined && snapshot.engine.reason !== '' ? (
-                <p className="dc-banner-detail">{snapshot.engine.reason}</p>
-              ) : null}
-              <p className="dc-banner-detail">{t('engineCompanionEdit')}</p>
-            </div>
-          ) : (
-            <p className="dc-subtle">{t('engineOwn')}</p>
-          )}
-
           {refreshError !== null ? (
             <p className="dc-updating" role="status">{t('updateFailed')} <span className="dc-mono">{refreshError}</span></p>
           ) : null}
@@ -325,20 +309,6 @@ export function CronSection({ status, mutate, history, t }: CronSectionProps) {
               </ul>
             </section>
           ) : null}
-
-          <section className="dc-targets" aria-label={t('targetsTitle')}>
-            <p className="dc-targets-title">{t('targetsTitle')}</p>
-            <ul className="dc-targets-list">
-              <li>{t('targetsFileHint')}</li>
-              {snapshot.targets
-                .filter(target => target.kind !== 'file')
-                .map(target => (
-                  <li key={target.id}>
-                    {target.label}{target.note !== undefined && target.note !== '' ? ` — ${target.note}` : ''}
-                  </li>
-                ))}
-            </ul>
-          </section>
 
           <h3 className="dc-title">{t('jobsTitle')}</h3>
 

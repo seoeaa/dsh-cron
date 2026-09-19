@@ -59,7 +59,7 @@ function withoutUndefined<T extends object>(input: T): T {
 }
 
 /** Plugin version reported in the panel (kept in step with package.json). */
-export const VERSION = '0.1.0'
+export const VERSION = '0.1.1'
 
 /** Why scheduling is (not) owned by this plugin. */
 export interface EngineLookup {
