@@ -97,7 +97,7 @@ Empty state: "No jobs yet." plus the hint to press `New job`.
 | `Edit` | opens the editor, then `{ action: 'save', job }` (§5) | `CronService.save()` → `writeJob()` | rewrites the definition YAML in the chosen scope, atomically | Defined fields change; `paused`, `running`, the anchor and the run history are untouched |
 | `History` | `dshCron/history (name, 100)` | `CronService.records()` → `listRuns()` | reads `<cwd>/.dsh/routines/runs/*.json` | Read-only |
 | `Copy prompt` | — | `writeClipboard(job.prompt)` | the browser clipboard only | Never disabled, never touches the host |
-| `Delete` | two steps: the button reveals an inline confirmation row, then `{ action: 'remove', name }` | `CronService.remove()` → `removeJob()` | `unlink` of the definition file: project scope first, then global scope | The definition is gone; **run records and their digests stay on disk** under the job's `cwd`, and the panel says so in the confirmation. A `paused` entry for that name may remain in `state.json` and is harmless |
+| `Delete` | two steps: the button reveals an inline confirmation row, then `{ action: 'remove', name }` | `CronService.remove()` → `removeJob()` | `unlink` of the definition file: project scope first, then global scope | The definition is gone and **its durable marks are cleared** (`paused`, `lastRunAt`, `lastStatus`), so re-creating the name starts clean; **run records and their digests stay on disk** under the job's `cwd`, and the panel says so in the confirmation |
 
 While a mutation for a row is in flight, that row's action buttons are disabled;
 `aria-busy` is set on the page while it is loading or refreshing. Every mutation

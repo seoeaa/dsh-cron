@@ -136,6 +136,44 @@ describe('CronService definitions', () => {
     expect(jobs[0]?.schedule).toBe('0 2 * * *')
   })
 
+  it('clears the durable marks of a deleted job, so a re-created name starts clean', async () => {
+    const dirs = tree()
+    const { service } = await mount(configFor(dirs))
+    saveBasic(service)
+    service.setPaused('nightly', true)
+    service.recordOutcome('nightly', {
+      runId: 'run-1',
+      routine: 'nightly',
+      profile: 'headless',
+      cwd: dirs.projectDir,
+      status: 'completed',
+      trigger: 'schedule',
+      startedAt: Date.now(),
+    })
+    expect(service.state().paused).toEqual(['nightly'])
+
+    expect(service.remove('nightly')).toBe(true)
+    const cleared = service.state()
+    expect(cleared.paused).toEqual([])
+    expect(Object.keys(cleared.lastRunAt)).toEqual([])
+    expect(Object.keys(cleared.lastStatus)).toEqual([])
+
+    // The next job to take the name is not paused behind the user's back.
+    saveBasic(service)
+    expect(service.list()[0]?.paused).toBe(false)
+    expect(service.list()[0]?.lastStatus).toBeUndefined()
+  })
+
+  it('reports deleting a job that does not exist instead of touching the state file', async () => {
+    const dirs = tree()
+    const { service } = await mount(configFor(dirs))
+    saveBasic(service)
+    service.setPaused('nightly', true)
+    const before = readFileSync(join(dirs.projectDir, '.dsh', 'routines', 'state.json'), 'utf8')
+    expect(service.remove('ghost')).toBe(false)
+    expect(readFileSync(join(dirs.projectDir, '.dsh', 'routines', 'state.json'), 'utf8')).toBe(before)
+  })
+
   it('reports an unparsable definition file without losing the valid ones', async () => {
     const dirs = tree()
     const { service } = await mount(configFor(dirs))
@@ -225,7 +263,7 @@ describe('CronService targets and snapshot', () => {
     const snapshot = service.snapshot()
     expect(snapshot.dirs).toEqual(resolveDirs(dirs.projectDir, dirs.globalDir))
     expect(snapshot.plugin).toBe('dsh-cron')
-    expect(snapshot.version).toBe('0.1.1')
+    expect(snapshot.version).toBe('0.1.2')
     expect(Date.parse(snapshot.now)).not.toBeNaN()
   })
 })

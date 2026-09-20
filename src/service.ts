@@ -59,7 +59,7 @@ function withoutUndefined<T extends object>(input: T): T {
 }
 
 /** Plugin version reported in the panel (kept in step with package.json). */
-export const VERSION = '0.1.1'
+export const VERSION = '0.1.2'
 
 /** Why scheduling is (not) owned by this plugin. */
 export interface EngineLookup {
@@ -246,11 +246,30 @@ export class CronService extends TypertRemoteService {
   /** Delete one definition from whichever scope holds it. */
   remove(name: string): boolean {
     const removed = removeJob(this.dirs, name)
-    if (removed) {
-      this.reload()
-      this.notify()
+    if (!removed) return false
+    // A deleted job must not leave its durable marks behind. The next job that
+    // takes the name would otherwise inherit them — most visibly the pause: a
+    // job deleted while paused would come back paused, with no one having
+    // paused it. The state file is only rewritten when it actually held
+    // something for this name, so an ordinary delete does not churn it.
+    if (this.stateMentions(name)) {
+      this.mutateState((state) => {
+        state.paused = state.paused.filter((entry) => entry !== name)
+        delete state.lastRunAt[name]
+        delete state.lastStatus[name]
+      })
     }
-    return removed
+    this.reload()
+    this.notify()
+    return true
+  }
+
+  /** Whether the durable state still names one job (used to skip a pointless write). */
+  private stateMentions(name: string): boolean {
+    const state = this.state()
+    return state.paused.includes(name)
+      || Object.hasOwn(state.lastRunAt, name)
+      || Object.hasOwn(state.lastStatus, name)
   }
 
   /** Pause or resume one job; the flag lives in the durable state file. */

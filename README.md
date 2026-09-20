@@ -194,7 +194,7 @@ Full per-control detail, including which file or service each action touches:
 | `cron_preview` | Validates a schedule without saving: description, normalized five-field form, next three fire times. | `schedule`, `timezone?` |
 | `cron_create` | Creates a job, or overwrites one by name. | `name`, `schedule`, `prompt`, `timezone?`, `cwd?`, `profile?`, `overlap?`, `timeoutMin?`, `deliver?`, `scope?` |
 | `cron_update` | Changes only the fields you pass; everything else keeps its value. Can move a definition between scopes. | `name` plus any of the `cron_create` fields |
-| `cron_delete` | Removes a definition. Run history stays on disk. | `name` |
+| `cron_delete` | Removes a definition and clears its pause/run anchors. Run history stays on disk. | `name` |
 | `cron_pause` | Stops a job from firing; definition and history are kept. | `name` |
 | `cron_resume` | Lets a paused job fire again. | `name` |
 | `cron_run` | Runs a job immediately and waits for it. A real unattended run; use it to verify a job, never in a loop. | `name` |

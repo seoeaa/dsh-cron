@@ -399,7 +399,11 @@ export function installCronTools(ctx: Context, service: CronService): void {
 
   ctx.tools.register(defineTool({
     name: TOOL_NAMES.remove,
-    description: 'Delete one cron job definition. Run history stays on disk under the job cwd.',
+    description: [
+      'Delete one cron job definition. Its run records and digests stay on disk under the job cwd,',
+      'while its durable marks (pause state, run anchors, last status) are cleared, so a later job that',
+      'takes the same name starts clean rather than inheriting them.',
+    ].join(' '),
     parameters: {
       name: { type: 'string', required: true, description: 'job to delete' },
     },
